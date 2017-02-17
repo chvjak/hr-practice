@@ -1,6 +1,24 @@
 def permutations(N = 3):
-    pass
-    # ?
+    indexes = [0] * N
+
+    # for 'current' index
+    while indexes[0] < N:
+        for i in range(N):
+            j = 0
+            while (indexes[i] + j) % N in indexes[:i]:
+                j += 1
+
+            indexes[i] = (indexes[i] + j) % N
+
+        print(indexes)
+
+        #there should be 'step back' as in 'combionations'
+
+        indexes[0] += 1
+
+
+
+
 
 def combinations(N = 4, M = 3):
     # w.o repetitions
@@ -14,7 +32,7 @@ def combinations(N = 4, M = 3):
             indexes[i] = indexes[i - 1] + 1
 
         for j in range(indexes[-1], N):
-            print(indexes)
+            print(indexes)                                  # yield, or res += indexes
             indexes[-1] += 1
 
         # there should be enough indexes to distribute through M - i remaining elements 'indexes'
@@ -35,7 +53,7 @@ def subsets(N):
         combinations(N, i)
 
 
-
+permutations(4)
 
 
 
