@@ -1,13 +1,13 @@
-def index_can_be_increased(indexes, i):
-    N = len(indexes)
-    j = 1
-    while indexes[i] + j in indexes[:i] and indexes[i] + j < N:
-        j += 1
-
-    return indexes[i] + j < N
-
 
 def permutations(N = 3):
+    def index_can_be_increased(indexes, i):
+        N = len(indexes)
+        j = 1
+        while indexes[i] + j in indexes[:i] and indexes[i] + j < N:
+            j += 1
+
+        return indexes[i] + j < N
+
     # since len(indexes) = len(elements) => only one iteration on last element. so last pos reached => perm is built
     indexes = [0] * N
 
