@@ -1,0 +1,186 @@
+file = open('basketball.txt')
+
+def input():
+    return file.readline()
+
+EPSILON = 0.1
+from math import sqrt
+
+
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def norm(self):
+        return sqrt(self.x ** 2 + self.y ** 2)
+
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        return Vector(self.x - other.x, self.y - other.y)
+
+    def __eq__(self, other):
+        return EPSILON > (self - other).norm()
+
+    def __float__(self):
+        return self.norm()
+
+    def __str__(self):
+        return str(self.x) + ',' + str(self.y)
+
+def solve(f, a, b):
+    while abs(a - b) > EPSILON:
+        fa = f(a)
+        fb = f(b)
+        fc = f((a + b) / 2)
+
+        if fa * fc < 0:
+            b = (a + b) / 2
+        else:
+            a = (a + b) / 2
+
+    return (a + b) / 2
+
+
+class Player:
+    def __init__(self, pos, s):
+        self.pos = pos
+        self.s = s
+
+
+    def can_block(self, x0, y0, bs, x1, y1):
+        max_t = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2) / bs
+        bs_x = bs / sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2) * (x1 - x0)
+        bs_y = bs / sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2) * (y1 - y0)
+
+        time_slices = 100
+        for t in (max_t / time_slices * i for i in range(1, time_slices)):
+            ball_pos = Vector(x0, y0) + Vector(bs_x * t, bs_y * t)
+
+            if (self.pos - ball_pos).norm() / self.s < t:
+                return True
+
+        return False
+
+    def can_block0(self, x0, y0, bs, x1, y1):
+        max_t = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2) / bs
+        bs_x = bs / sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2) * (x1 - x0)
+        bs_y = bs / sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2) * (y1 - y0)
+
+        time_slices = 10
+        speed_slices = 10
+        min_norm = 10.0 ** 10
+        for t in (max_t / time_slices * i for i in range(1, time_slices)):
+            for vx in (self.s / speed_slices * j for j in range(1, speed_slices)):
+                vy = sqrt(self.s ** 2 - vx ** 2)
+                ball_pos = Vector(x0, y0) + Vector(bs_x * t, bs_y * t)
+
+                min_norm = min(min_norm, (self.pos + Vector(vx * t, vy * t) - ball_pos).norm())
+                min_norm = min(min_norm, (self.pos + Vector(-vx * t, vy * t) - ball_pos).norm())
+                min_norm = min(min_norm, (self.pos + Vector(vx * t, -vy * t) - ball_pos).norm())
+                min_norm = min(min_norm, (self.pos + Vector(-vx * t, -vy * t) - ball_pos).norm())
+
+                if self.pos + Vector(vx * t, vy * t) == ball_pos:
+                    #print(min_norm, t, vx * t, vy * t)
+                    return True
+
+                if self.pos + Vector(-vx * t, vy * t) == ball_pos:
+                    #print(min_norm, t, -vx * t, vy * t)
+                    return True
+
+                if self.pos + Vector(-vx * t, -vy * t) == ball_pos:
+                    #print(min_norm, t, -vx * t, -vy * t)
+                    return True
+
+                if self.pos + Vector(vx * t, -vy * t) == ball_pos:
+                    #print(min_norm, t, vx * t, -vy * t)
+                    return True
+
+        #print(min_norm)
+        return False
+
+    def can_block1(self, x0, y0, V_ball , x1, y1):
+
+        delta_x01 = (x1 - x0)
+        delta_y01 = (y1 - y0)
+
+        dist_caroline_hoop = sqrt(delta_x01 ** 2 + delta_y01 ** 2)
+        max_t =  dist_caroline_hoop / V_ball
+
+        V_ball_x = delta_x01 * V_ball / dist_caroline_hoop
+        V_ball_y = delta_y01 * V_ball / dist_caroline_hoop
+
+
+        if abs(x1 - self.pos.x) < EPSILON and abs(y1 - self.pos.y) < EPSILON:
+            return True
+
+        if max_t < EPSILON:
+            return False
+
+        delta_x = (x0 - self.pos.x)
+        delta_y = (y0 - self.pos.y)
+
+        V = self.s
+
+        if abs(delta_x) < EPSILON or abs(delta_y) < EPSILON:
+            delta = delta_x if abs(delta_y) < EPSILON else delta_y
+            return delta / (V_ball - V) < max_t
+        else:
+            f = lambda vx : delta_x * (sqrt(V ** 2 - vx ** 2) - V_ball_y) - delta_y * (vx - V_ball_x)
+            a = -V + EPSILON
+            b = V - EPSILON
+            c = 0
+            fa = f(a)
+            fb = f(b)
+            fc = f(c)
+
+            if fa * fb < 0:
+                V_x = solve(f, a, b)
+
+                if abs(delta_x / V_x) < max_t:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+
+
+    def can_block2(self, x0, y0, bs, x1, y1):
+        max_t = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2) / bs
+
+        if abs(x1 - self.pos.x) < EPSILON and abs(y1 - self.pos.y) < EPSILON:
+            return True
+
+        if max_t < EPSILON:
+            return False
+
+        if sqrt((x0 - self.pos.x) ** 2 + (y0 - self.pos.y) ** 2) / max_t < self.s:
+            return True
+        else:
+            return False
+
+
+
+T = int(input().strip())
+
+for t in range(T):
+    # hoop coordinates
+    x1, y1 = [int(x) for x in input().strip().split(' ')]
+
+    # Caroline coordinates, ball speed
+    x0, y0, bs = [int(x) for x in input().strip().split(' ')]
+
+    N = 5
+    players = [None] * N
+    for i in range(N):
+        x, y, s = [int(x) for x in input().strip().split(' ')]
+        players[i] = Player(Vector(x, y), s)
+
+    for p in players:
+        if p.can_block(x0, y0, bs, x1, y1):
+            print('NO')
+            break
+    else:
+        print('YES')
