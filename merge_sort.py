@@ -1,3 +1,7 @@
+f = open('merge_sort2.txt')
+def input():
+    return f.readline()
+
 def merge(l_arr, r_arr):
     res = []
     LN, RN = len(l_arr), len(r_arr)
@@ -14,13 +18,11 @@ def merge(l_arr, r_arr):
             res.append(r_arr[ri])
             ri += 1
 
-        if ri > li:
-            inv_count += 1
+            inv_count += LN - li        # TODO: still something is incorrect. 2FIX
 
     if li < LN:
         res.extend(l_arr[li:])
     else:
-#        inv_count += RN - ri
         res.extend(r_arr[ri:])
 
     return inv_count, res
@@ -46,13 +48,16 @@ class Solution:
     def inversionCount(self, A):
 
         inv_count, res = merge_sort(A)
-        print(inv_count, res)
+        #print(inv_count, res)
 
         return inv_count
 
-S = Solution()
 
-S.inversionCount([2, 1, 3])
-S.inversionCount([3, 2, 1])
-S.inversionCount([1, 2, 3])
-S.inversionCount([1, 3, 2])
+T = int(input().strip())
+for i in range(T):
+    N = int(input().strip())
+    arr = [int(x) for x in input().strip().split(' ')]
+
+    S = Solution()
+
+    print(S.inversionCount(arr))

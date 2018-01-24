@@ -25,7 +25,7 @@ def permutations(N = 3):
             indexes[i] = indexes[i] + j
             i += 1
 
-        print(indexes)
+        yield indexes
 
         #'step back'
         i = N - 1
@@ -50,7 +50,7 @@ def combinations(N = 4, M = 3):
             indexes[i] = indexes[i - 1] + 1
 
         for j in range(indexes[-1], N):
-            print(indexes)              # yield, or res += indexes
+            yield indexes
             indexes[-1] += 1
 
         # go back until there is enough indexes to distribute through M - i remaining elements 'indexes'
@@ -71,7 +71,23 @@ def subsets(N):
         combinations(N, i)
 
 
-permutations(4)
+#permutations(4)
+
+class Solution:
+    # @param A : integer
+    # @param B : integer
+    # @return a list of list of integers
+    def combine(self, N, K):
+        res = []
+        for c in combinations(N, K):
+            res.append(c[:])
+
+
+        return res
+
+S = Solution()
+print(S.combine(1, 1))
+print(S.combine(4, 2))
 
 
 
