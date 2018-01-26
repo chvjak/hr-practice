@@ -1,7 +1,14 @@
+def update_ms(max_square, h_ones, v_ones, r, c):
+    max_square[r][c] = min(h_ones[r][c], v_ones[r][c], r + 1, c + 1)
+
+    if r > 0 and c > 0:
+        max_square[r][c] = min(max_square[r][c], max_square[r - 1][c - 1] + 1)
+
 def MaximalSquare(board):
-    N = len(board)
-    h_ones = [[0] * N for i in range(N)]
-    v_ones = [[0] * N for i in range(N)]
+    R = len(board)
+    C = len(board[0])
+    h_ones = [[0] * C for i in range(R)]
+    v_ones = [[0] * C for i in range(R)]
     for r, row in enumerate(board):
         for c, v in enumerate(row):
             if v == '1':
@@ -16,21 +23,36 @@ def MaximalSquare(board):
                     v_ones[r][c] = v_ones[r - 1][c] + 1
 
     max_square_side = -1
-    for r in reversed(range(N)):
-        for c in reversed(range(N)):
-            square_side = min(h_ones[r][c], v_ones[r][c])
-            for i in range(min(h_ones[r][c], v_ones[r][c])):
-                if square_side - i > min(h_ones[r - i][c - i], v_ones[r - i][c - i]):
-                    square_side = i
-                    break
+    max_square = [[0] * C for i in range(R)]
 
-            max_square_side = max(max_square_side, square_side)
+
+    for r0 in range(R):
+        c = 0
+        for r in range(r0, R):
+            update_ms(max_square, h_ones, v_ones, r, c)
+
+            max_square_side = max(max_square_side, max_square[r][c])
+
+            c = (c + 1) % C
+
+    for c0 in range(C):
+        r = 0
+
+        for c in range(c0, C):
+
+            update_ms(max_square, h_ones, v_ones, r, c)
+
+            max_square_side = max(max_square_side, max_square[r][c])
+
+            r = (r + 1) % R
+
 
     return max_square_side * max_square_side
 
 
 # keep this function call here
-print(MaximalSquare(["0111", "1101", "0111"]))
+#print(MaximalSquare(["0111", "1101", "0111"]))
+print(MaximalSquare(["101101", "111111", "010111", "111111"]))
 
 
 
