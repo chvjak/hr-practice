@@ -1,6 +1,5 @@
 # Definition for a binary tree node.
 # https://leetcode.com/problems/longest-univalue-path/description/
-# TODO: find and fix error
 
 class TreeNode:
     def __init__(self, x):
@@ -36,7 +35,7 @@ def path_len(root, pl = 1):
         rl = pl
 
     if root.right is not None and root.val == root.right.val:
-        rr = path_len(root.left, pl + 1)
+        rr = path_len(root.right, pl + 1)
     else:
         rr = pl
 
