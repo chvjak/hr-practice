@@ -29,5 +29,6 @@ def CountSeqs(mins, maxs):
 print(CountSeqs([1, 3, 1, 4], [6, 5, 4, 6]))
 print(CountSeqs([7, 8], [9, 10]))
 print(CountSeqs([20, 10], [30, 20]))
+print(CountSeqs([10, 20], [20, 30]))
 print(CountSeqs([4, 46, 46, 35, 20, 77, 20], [41, 65, 84, 90, 49, 86, 88]))
 print(CountSeqs([1, 1, 1], [10000, 10000, 10000]))
