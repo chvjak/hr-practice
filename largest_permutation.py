@@ -8,16 +8,18 @@ def input():
 import sys
 
 
-def largestPermutation0(k, arr):
+def largestPermutation(k, arr):
     # Complete this function
 
-    arr_cpy = arr[:]
-    arr_cpy.sort(reverse=True)
 
-    for i, n in enumerate(arr_cpy):
-        ix = arr.index(n)
+    N = len(arr)
+    ix_dict = dict(zip([i for i in range(1, N + 1)], [arr.index(i) for i in range(1, N + 1)]))
+
+    for i, n in enumerate(reversed(range(1, N + 1))):
+        ix = ix_dict[n]
         if i != ix:
             arr[i], arr[ix] = arr[ix], arr[i]
+            ix_dict[arr[i]], ix_dict[arr[ix]] = ix_dict[arr[ix]], ix_dict[arr[i]]
             k -= 1
 
             if k == 0:
@@ -25,23 +27,6 @@ def largestPermutation0(k, arr):
 
     return arr
 
-def largestPermutation(k, arr):
-    N = len(arr)
-
-    old_ix_of_sorted = [i for i in range(N)]
-    old_ix_of_sorted.sort(key=lambda i: arr[i], reverse=True)
-
-    res = arr[:]
-    for i in range(k):
-        res[i] = N - i
-
-    # TODO: Not decrease k if on its place
-    # TODO: if old_ix_of_sorted[i] < k => corrupts res
-
-    for i in range(k):
-        res[old_ix_of_sorted[i]] = arr[i]
-
-    return res
 
 
 if __name__ == "__main__":
