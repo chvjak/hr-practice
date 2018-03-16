@@ -24,5 +24,21 @@ def quick_sort(arr):
 
     return l_arr + [pivot] + r_arr
 
-print(quick_sort([3, 1, 2]))
-print(quick_sort([3, 1, 2, 4, 6, 5]))
+
+'''
+f = open('quick_sort_list1.txt')
+l = f.readline()
+nums = [int(x) for x in l.strip().split(',')]
+print(len(nums))
+'''
+N = 30000
+nums = [0] * N
+import random
+for i in range(N):
+    nums[i] = random.randint(0, 3)
+
+#print(quick_sort([3, 1, 2]))
+#print(quick_sort([3, 1, 2, 4, 6, 5]))
+import sys
+sys.setrecursionlimit(N)
+print(quick_sort(nums[:N]))
