@@ -5,41 +5,61 @@ def input():
     return f.readline()
 
 
+# !/bin/python3
+
 import os
 import sys
 import heapq
 from collections import defaultdict
 
-import networkx as nx
-import matplotlib.pyplot as plt
+
+class Element:
+    def __init__(self, v):
+        self.v = v
+        self.deleted = False
+
+    def __lt__(self, other):
+        return True
+
+    def __repr__(self):
+        return "[{}, {}]".format(self.v, self.deleted)
+
 
 class PQ():
     def __init__(self):
         self.data = []
+        self.v2el = {}
+        self.count = 0
 
     def enque(self, k, v):
-        heapq.heappush(self.data, (k, v))
+        e = Element(v)
+        heapq.heappush(self.data, (k, e))
+        self.v2el[v] = e
+        self.count += 1
 
     def deque(self):
-        return heapq.heappop(self.data)
+        while len(self.data):
+            k, e = heapq.heappop(self.data)
+            if not e.deleted:
+                v = e.v
+                del self.v2el[v]
+                break
+        else:
+            return None, None
+
+        self.count -= 1
+        return k, v
 
     def update_key(self, k, v):
-        ix = 0
-        for _, v1 in self.data:
-            if v1 == v:
-                break
-            else:
-                ix += 1
-
-        if ix == len(self.data):
+        if v not in self.v2el.keys():
             return
 
-        self.data[ix] = (k, v)
-
-        heapq.heapify(self.data)  # O(N)
+        self.v2el[v].deleted = True
+        self.enque(k, v)
+        self.count -= 1
 
     def __len__(self):
-        return len(self.data)
+        return self.count
 
 
 def dijkstra(adj, weights, s, t, N):
@@ -62,7 +82,6 @@ def dijkstra(adj, weights, s, t, N):
                 pq.update_key(new_dist, vn)
                 dist_to[vn] = new_dist
 
-
     return dist_to[t]
 
 
@@ -75,33 +94,24 @@ if __name__ == '__main__':
 
     adj = defaultdict(set)
     weights = {}
-    G = nx.Graph()
-    G.add_nodes_from(range(g_nodes))
-
     for g_itr in range(g_edges):
         v_from, v_to, weight = map(int, input().split())
 
         v_from -= 1
         v_to -= 1
         adj[v_from].add(v_to)
-        weights[(v_from, v_to)] = weight
+        adj[v_to].add(v_from)
 
-        G.add_edge(v_from, v_to, weight=weight)
-
-    #elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d['weight'] > 1000]
-    #esmall = [(u, v) for (u, v, d) in G.edges(data=True) if d['weight'] <= 1000]
-
-    #pos = nx.spring_layout(G)  # positions for all nodes
-
-    # edges
-    #nx.draw_networkx_edges(G, pos, edgelist=elarge, width=6)
-    #nx.draw_networkx_edges(G, pos, edgelist=esmall, width=6, alpha=0.5, edge_color='b', style='dashed')
-
-    #nx.draw(G, with_labels=True, pos=pos)
-    nx.draw_spring(G, with_labels=True, k=1, iterations=1)
-    plt.show()
+        if (v_from, v_to) in weights.keys():
+            print('DUPLICATE')
+            break
+        else:
+            weights[(v_from, v_to)] = weight
+            weights[(v_to, v_from)] = weight
 
     res = dijkstra(adj, weights, 0, g_nodes - 1, g_nodes)
-
-    print(res)
+    if res == sys.maxsize:
+        print("NO PATH EXISTS")
+    else:
+        print(res)
 
