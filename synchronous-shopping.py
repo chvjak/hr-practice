@@ -3,120 +3,133 @@ file = open('synchronous-shopping.txt')
 def input():
     return file.readline()
 
-MAX_SIZE = 10 ** 20
-def flloyd_warshall(G):
-    N = len(G)
 
-    fwd = [row[:] for row in G]  # Floyd-Warshall distance
-
-    for i in range(N):
-        fwd[i][i] = 0
-
-    for k in range(N):
-        for i in range(N - 1):
-            for j in range(i + 1, N):
-                fwd[j][i] = fwd[i][j] = min(fwd[i][j], fwd[i][k] + fwd[k][j])
-
-    return fwd
+from collections import defaultdict
+from collections import deque
+import heapq
+import sys
 
 
-def get_direction_to_fishtype(fw_distances, fish_types_by_mall):
-    N = len(fw_distances)
-    K = len(fish_types_by_mall)
+class PQ:
+    def __init__(self):
+        self.data = []
 
-    tr = [MAX_SIZE] * K
-    fw_ft = [tr[:] for i in range(N)]
-    for i in range(N):
-        for k in range(K):
-            min_fw = MAX_SIZE
-            min_j = None
-            for j in range(N):
-                if k in fish_types_by_mall[j]:
-                    if fw_distances[i][j] < min_fw:
-                        min_fw = fw_distances[i][j]
-                        min_j = j
+    def enq(self, v):
+        heapq.heappush(self.data, v)
 
-            fw_ft[i][k] = min_j
+    def deq(self):
+        return heapq.heappop(self.data)
 
-    return fw_ft
-
-from itertools import permutations
-def get_min_all_permutations_distance(fish_types_set):
-    all_permutations = permutations(fish_types_set)
-
-    min1 = MAX_SIZE
-    for p in all_permutations:
-        current_pos = 0
-        distance = 0
-        for ft in p:
-            for m in malls_by_fish_type[ft]:
-                next_pos = m
-                distance += fw_distances[current_pos][next_pos]
-                current_pos = next_pos
-
-        # add distance to N <- THIS IS AN ERROR. 
-        # Should check ALL (not just closest) possible malls to find shortest root to N 
-        distance += fw_distances[current_pos][N - 1]
-
-        min1 = min(min1, distance)
-
-    return min1
+    def __len__(self):
+        return len(self.data)
 
 
-from itertools import combinations
-def get_all_subset_pairs(elements):
-    elements_set = set(elements)
-    all_subset_pairs = []
-    N = len(elements)
-    for i in range(1, N):
-        for ss in combinations(elements, i):
+def bits_from_array(bits_array):
+    res = 0
+    for bit in bits_array:
+        res |= (1 << bit)
 
-            all_subset_pairs += [(elements_set.difference(set(ss)), set(ss))]
-
-    return all_subset_pairs
+    return res
 
 
-N, M, K = [int(x) for x in input().strip().split()]
+def dijkstra(adj, weights, s, t):
+    pq = PQ()
+    pq.enq((0, s))
+    dist = {}
+    dist[s] = 0
 
-fish_types_by_mall = [None] * N
+    path_to = {}
 
-for i in range(N):
-    n_fish_types_by_mall = [int(x) for x in input().strip().split()]
-    fish_types_by_mall_i = n_fish_types_by_mall[1:] # 1st elem is length, drop it
+    while len(pq):
+        _, v = pq.deq()
+        for u in adj[v]:
+            if u not in dist.keys():
+                dist[u] = sys.maxsize
 
-    fish_types_by_mall[i] = [x - 1 for x in fish_types_by_mall_i]
+            if dist[u] > dist[v] + weights[(v, u)]:
+                dist[u] = dist[v] + weights[(v, u)]
+                path_to[u] = v
+                pq.enq((dist[u], u))
 
-malls_by_fish_type = [None] * K
-for i in range(N):
-    fts = fish_types_by_mall[i]
-    for ft in fts:
-        if malls_by_fish_type[ft] is None:
-            malls_by_fish_type[ft] = []
-        malls_by_fish_type[ft] += [i]
+    n = t
+    path = []
+    while n != s:
+        path.append(n)
+        n = path_to[n]
+    path.append(s)
+
+    # print(path)
+    return dist[t]
 
 
-row = [MAX_SIZE] * N
-G = [row[:] for i in range(N)]
+# N, M, K
+city_count, road_count, fish_type_count = [int(x) for x in input().strip().split(' ')]
 
-for j in range(M):
-    f, t, w = [int(x) for x in input().strip().split()]
-    f -= 1
-    t -= 1
-    G[f][t] = w
-    G[t][f] = w
+fish_in_city = {}
+for c in range(city_count):
+    fish_in_city[c + 1] = bits_from_array([int(x) for x in input().strip().split(' ')][1:])
 
-fw_distances = flloyd_warshall(G)
-direction_to_fishtype = get_direction_to_fishtype(fw_distances, fish_types_by_mall)
+adj = defaultdict(set)
+weights = {}
+for r in range(road_count):
+    v_from, v_to, weight = [int(x) for x in input().strip().split(' ')]
+    adj[v_from].add(v_to)
+    adj[v_to].add(v_from)
+    weights[(v_from, v_to)] = weight
+    weights[(v_to, v_from)] = weight
 
-fish_1N = set(fish_types_by_mall[0]).union(set(fish_types_by_mall[-1]))   # fish availble in 1st and last malls => should not be bought on the way
-fish_to_buy = set(range(K)).difference(fish_1N)
-ft_ss = get_all_subset_pairs(fish_to_buy)  # All 2^K subsets of fish types not in 1st or Nth mall
+# generate states as combination (i.e cross product) of neighbor states of cat1 and cat2 i.e BFS
+# CONCERN: too complex - O(E^2V^2)
+cat1_pos = 1
+cat2_pos = 1
+q = deque()
+start_pos = ((1, 1), fish_in_city[1])
+target_pos = ((city_count, city_count), bits_from_array(range(1, fish_type_count + 1)))
 
-min_max = MAX_SIZE
-for (ss1, ss2) in ft_ss:
-    md1 = get_min_all_permutations_distance(ss1)
-    md2 = get_min_all_permutations_distance(ss2)
+q.append(start_pos)
+visited = set()
+visited.add(start_pos)
 
-    min_max = min(min_max, max(md1,md2))
+new_adj = defaultdict(set)
+new_weights = {}
 
-print(min_max)
+while len(q):
+    pos = q.popleft()
+    (cat1_pos, cat2_pos), fish_pos = pos
+
+    for c1_next in adj[cat1_pos] | set([cat1_pos]):
+        if cat1_pos != c1_next:
+            c1_dist = weights[(cat1_pos, c1_next)]
+        else:
+            c1_dist = 0
+
+        for c2_next in adj[cat2_pos] | set([cat2_pos]):
+            if cat2_pos != c2_next:
+                c2_dist = weights[(cat2_pos, c2_next)]
+            else:
+                c2_dist = 0
+
+            if c1_dist == c2_dist == 0:
+                continue
+
+            new_fish_pos = fish_pos | fish_in_city[c1_next] | fish_in_city[c2_next]
+            if c1_next > c2_next:
+                new_pos = ((c2_next, c1_next), new_fish_pos)
+            else:
+                new_pos = ((c1_next, c2_next), new_fish_pos)
+
+            new_adj[pos].add(new_pos)
+            new_weights[(pos, new_pos)] = max(c1_dist, c2_dist)
+
+            if new_pos in visited or new_pos == target_pos:
+                continue
+
+            visited.add(new_pos)
+            q.append(new_pos)
+
+# print(new_adj)
+# print(new_weights)
+
+res = dijkstra(new_adj, new_weights, start_pos, target_pos)
+
+print(res)
