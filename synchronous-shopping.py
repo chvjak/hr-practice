@@ -4,10 +4,16 @@ def input():
     return file.readline()
 
 
-from collections import defaultdict
-from collections import deque
 import heapq
 import sys
+
+
+def bits_from_array(bits_array):
+    res = 0
+    for bit in bits_array:
+        res |= (1 << (bit - 1))
+
+    return res
 
 
 class PQ:
@@ -24,42 +30,28 @@ class PQ:
         return len(self.data)
 
 
-def bits_from_array(bits_array):
-    res = 0
-    for bit in bits_array:
-        res |= (1 << bit)
 
-    return res
-
-
-def dijkstra(adj, weights, s, t):
+def dijkstra(adj, fish_in_city, city_count, fish_type_count):
+    start_state = (1, fish_in_city[1])
     pq = PQ()
-    pq.enq((0, s))
-    dist = {}
-    dist[s] = 0
+    pq.enq((0, start_state))
 
-    path_to = {}
+    row = [sys.maxsize] * (1 << fish_type_count)
+    dist = [row[:] for i in range(city_count + 1)]
+    dist[1][fish_in_city[1]] = 0
 
     while len(pq):
-        _, v = pq.deq()
-        for u in adj[v]:
-            if u not in dist.keys():
-                dist[u] = sys.maxsize
+        _, state = pq.deq()
 
-            if dist[u] > dist[v] + weights[(v, u)]:
-                dist[u] = dist[v] + weights[(v, u)]
-                path_to[u] = v
-                pq.enq((dist[u], u))
+        city, fish_state = state
+        for next_city, weight in adj[city]:
+            next_fish_state = fish_state | fish_in_city[next_city]
 
-    n = t
-    path = []
-    while n != s:
-        path.append(n)
-        n = path_to[n]
-    path.append(s)
+            if dist[next_city][next_fish_state] > dist[city][fish_state] + weight:
+                dist[next_city][next_fish_state] = dist[city][fish_state] + weight
+                pq.enq((dist[next_city][next_fish_state], (next_city, next_fish_state)))
 
-    # print(path)
-    return dist[t]
+    return dist
 
 
 # N, M, K
@@ -69,67 +61,30 @@ fish_in_city = {}
 for c in range(city_count):
     fish_in_city[c + 1] = bits_from_array([int(x) for x in input().strip().split(' ')][1:])
 
-adj = defaultdict(set)
-weights = {}
+adj = [[] for x in range(city_count + 1)]
+
 for r in range(road_count):
     v_from, v_to, weight = [int(x) for x in input().strip().split(' ')]
-    adj[v_from].add(v_to)
-    adj[v_to].add(v_from)
-    weights[(v_from, v_to)] = weight
-    weights[(v_to, v_from)] = weight
+    adj[v_from].append((v_to, weight))
+    adj[v_to].append((v_from, weight))
 
-# generate states as combination (i.e cross product) of neighbor states of cat1 and cat2 i.e BFS
-# CONCERN: too complex - O(E^2V^2)
-cat1_pos = 1
-cat2_pos = 1
-q = deque()
-start_pos = ((1, 1), fish_in_city[1])
-target_pos = ((city_count, city_count), bits_from_array(range(1, fish_type_count + 1)))
+final_fish_state = (1 << fish_type_count) - 1
+final_state = (city_count, final_fish_state)
 
-q.append(start_pos)
-visited = set()
-visited.add(start_pos)
+dist = dijkstra(adj, fish_in_city, city_count, fish_type_count)
+res = sys.maxsize
 
-new_adj = defaultdict(set)
-new_weights = {}
+for ffs1 in range(final_fish_state):
+    for ffs2 in range(ffs1 + 1, final_fish_state + 1):
+        if ffs1 | ffs2 == final_fish_state:
+            if ffs1 != 0:
+                d1 = dist[city_count][ffs1]
+                d2 = dist[city_count][ffs2]
 
-while len(q):
-    pos = q.popleft()
-    (cat1_pos, cat2_pos), fish_pos = pos
-
-    for c1_next in adj[cat1_pos] | set([cat1_pos]):
-        if cat1_pos != c1_next:
-            c1_dist = weights[(cat1_pos, c1_next)]
-        else:
-            c1_dist = 0
-
-        for c2_next in adj[cat2_pos] | set([cat2_pos]):
-            if cat2_pos != c2_next:
-                c2_dist = weights[(cat2_pos, c2_next)]
+                res = min(res, max(d1, d2))
             else:
-                c2_dist = 0
+                d2 = dist[city_count][ffs2]
 
-            if c1_dist == c2_dist == 0:
-                continue
-
-            new_fish_pos = fish_pos | fish_in_city[c1_next] | fish_in_city[c2_next]
-            if c1_next > c2_next:
-                new_pos = ((c2_next, c1_next), new_fish_pos)
-            else:
-                new_pos = ((c1_next, c2_next), new_fish_pos)
-
-            new_adj[pos].add(new_pos)
-            new_weights[(pos, new_pos)] = max(c1_dist, c2_dist)
-
-            if new_pos in visited or new_pos == target_pos:
-                continue
-
-            visited.add(new_pos)
-            q.append(new_pos)
-
-# print(new_adj)
-# print(new_weights)
-
-res = dijkstra(new_adj, new_weights, start_pos, target_pos)
+                res = min(res, d2)
 
 print(res)
